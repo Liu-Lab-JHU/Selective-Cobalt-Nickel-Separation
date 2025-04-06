@@ -9,12 +9,13 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, Draw
 from rdkit.Chem.Draw import rdMolDraw2D
 
-df = pd.read_csv('file.csv')  # Replace with the path to your CSV file that contains SMILES of molecules
+df = pd.read_csv('raw_data.csv')  # Replace with the path to your CSV file that contains SMILES of molecules
 smiles_list = df['SMILES'].tolist() # Replace 'SMILES' with the actual column name
 molecules = []
 fingerprint_data = []
 nBits=2048  # Replace to actual number of bits
 
+# Function to convert SMILES to RDKit molecule and then to ECFP
 for smiles in smiles_list:
     mol = Chem.MolFromSmiles(smiles)  # Convert SMILES to RDKit molecule
     if mol:
@@ -28,16 +29,19 @@ for smiles in smiles_list:
         print(f"Invalid SMILES: {smiles}")
         fingerprint_data.append([None] * nBits)
 
+
 df_fragments=pd.read_csv('feature_importance.csv')  # Replace with the path to your CSV file
-# important_bits = [1141, 216, 1694, 1564]  # Replace with SHAP important bits
 important_bits=[]
+
 for feature in df_fragments['feature']:
     important_bits.append(feature)
+
+# important_bits = [1141, 216, 1694, 1564]  # Replace with important bits
 # Generate Morgan FP with bitInfo
 info = {}
 
 
-for mol in molecules:  # Use stored molecules from step 1
+for mol in molecules:  # Use stored molecules
     fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=2048, bitInfo=info)
 
     # Check fragments for each important bit
@@ -49,7 +53,7 @@ for mol in molecules:  # Use stored molecules from step 1
             amap = {}
             submol = Chem.PathToSubmol(mol, env, atomMap=amap)  # Substructure for this bit
 
-            # Draw the substructure fragment
+            # Draw the substructure fragment and save it as an SVG file
             drawer = rdMolDraw2D.MolDraw2DSVG(400, 400)
             rdMolDraw2D.PrepareAndDrawMolecule(drawer, submol)
             drawer.FinishDrawing()
